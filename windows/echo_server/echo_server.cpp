@@ -48,24 +48,30 @@ int main(int argc, char* argv[])
     //accept
     SOCKADDR_IN clnt_addr;
     int sz_clnt_addr = sizeof(clnt_addr);
-    sock_client = accept(sock_server, (SOCKADDR *)&clnt_addr, &sz_clnt_addr);
-    if (sock_client == INVALID_SOCKET)
-        err_handling("accept() error!");
+    int clnt_sock_num = 0;
+    while (clnt_sock_num < 5)
+    {
+        sock_client = accept(sock_server, (SOCKADDR *)&clnt_addr, &sz_clnt_addr);
+        if (sock_client == INVALID_SOCKET)
+            err_handling("accept() error!");
 
-    //recv
-    char *recv_msg = new char[100];
-    int str_len = recv(sock_client, recv_msg, 30, 0);
-    if (str_len == -1)
-        err_handling("recv() error!");
+        //recv
+        char *recv_msg = new char[100];
+        int str_len = recv(sock_client, recv_msg, 30, 0);
+        if (str_len == -1)
+            err_handling("recv() error!");
 
-    //edit msg and send
-    cout << "recv msg: " << recv_msg << endl;
-    // strcat();
-    if (-1 == send(sock_client, recv_msg, 30, 0))
-        err_handling("send() error!");
+        //edit msg and send
+        cout << "recv msg: " << recv_msg << endl;
+        if (-1 == send(sock_client, recv_msg, 30, 0))
+            err_handling("send() error!");
 
-    //close socket
-    closesocket(sock_client);
+        //close socket
+        closesocket(sock_client);
+
+        clnt_sock_num++;
+    }
+    //close server socket
     closesocket(sock_server);
 
     //release socket library
