@@ -11,3 +11,5 @@ target_include_directories(file_worker
 PUBLIC
 ${PROJECT_SOURCE_DIR}/include
 )
+target_link_libraries(file_worker PUBLIC
+                      compile_config)

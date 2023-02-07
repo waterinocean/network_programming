@@ -1,4 +1,4 @@
-add_executable(file_server_tcp main.cpp ${file_worker_src})
+add_executable(file_server_tcp main.cpp)
 
 set_target_properties(file_server_tcp
 PROPERTIES
@@ -10,5 +10,9 @@ ${PROJECT_SOURCE_DIR}/include
 )
 
 target_link_libraries(file_server_tcp
-PRIVATE
-file_worker)
+                      PRIVATE
+                        file_worker
+                        tcp_server)
+
+target_link_libraries(file_server_tcp PUBLIC
+                      compile_config)
