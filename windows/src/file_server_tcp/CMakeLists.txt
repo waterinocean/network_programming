@@ -1,4 +1,4 @@
-add_executable(file_server_tcp main.cpp)
+add_executable(file_server_tcp main.cpp file_server_tcp.cpp)
 
 set_target_properties(file_server_tcp
 PROPERTIES

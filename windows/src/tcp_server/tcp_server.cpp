@@ -1,5 +1,8 @@
 #include <thread>
+#include <algorithm>
 #include "tcp_server/tcp_server.h"
+#include "tcp_server/server_observer.h"
+
 
 using namespace std;
 
@@ -17,6 +20,11 @@ TcpServer::~TcpServer()
     clear_up();
 }
 
+void TcpServer::set_observer(std::shared_ptr<AbstractServerObserver> observer)
+{
+    srv_observer = observer;
+}
+
 void TcpServer::init_socket_use()
 {
     if (WSAStartup(MAKEWORD(2, 2), &this->wsa_data) != 0)
@@ -25,6 +33,7 @@ void TcpServer::init_socket_use()
 
 void TcpServer::clear_up()
 {
+    closesocket(this->srv_socket);
     if (WSACleanup() != 0)
         err_handling("WSACleanup() error!");
 }
@@ -53,13 +62,12 @@ void TcpServer::start()
         err_handling("listen() error!");
 
     std::thread thread_accept(&TcpServer::accept_clnt_sock, this);
-    thread_accept.detach();
+    thread_accept.join();
 }
 
 //accept a socket and execute a thread for recv msg
 void TcpServer::accept_clnt_sock()
 {
-    cout << "thread accept is running, thread id is: " << std::this_thread::get_id() << endl;
     int n = 0, max_count = 10; //max serve 10 sock clients
     while (n <= max_count)
     {
@@ -70,14 +78,13 @@ void TcpServer::accept_clnt_sock()
         if (clnt_socket == INVALID_SOCKET){
             err_handling("accept() error!");
         }
-        
-        cout << "client connected, ip is: " 
-             << inet_ntoa(clnt_sock_addr.sin_addr)
-             << " port is: " << ntohs(clnt_sock_addr.sin_port) << endl;
+
+        if (srv_observer != nullptr)
+            srv_observer->clnt_connect(inet_ntoa(clnt_sock_addr.sin_addr), ntohs(clnt_sock_addr.sin_port));
+
         shared_ptr<SocketInfo> clnt_sock_info = 
             make_shared<SocketInfo>(SocketInfo(clnt_socket, 
-                                    clnt_sock_addr,
-                                    clnt_sock_addr_size));
+                                    clnt_sock_addr));
         this->clnt_sockets.push_back(clnt_sock_info);
 
         std::thread thread_recv(&TcpServer::read_msg, this, this->clnt_sockets.back());
@@ -85,12 +92,10 @@ void TcpServer::accept_clnt_sock()
 
         n++;
     }
-    cout << "thread accept finishing, thread id is: " << std::this_thread::get_id() << endl;
 }
 
 void TcpServer::read_msg(std::shared_ptr<SocketInfo> sock_info)
 {
-    cout << "thread read msg is running, thread id is: " << std::this_thread::get_id() << endl;
     char msg_recv[1000];
     int str_len = 0;
     while (1)
@@ -98,28 +103,43 @@ void TcpServer::read_msg(std::shared_ptr<SocketInfo> sock_info)
         memset(msg_recv, 0, 1000);
         str_len = recv(sock_info->socket, msg_recv, 1000, 0);
         if (str_len > 0){
-            cout << "receive msg: " << msg_recv << endl;
-            send(sock_info->socket, msg_recv, str_len, 0);
+            if (srv_observer != nullptr)
+                srv_observer->receive_msg(sock_info->ip, msg_recv);
         }
         else if (str_len == 0){
-            cout << "client socke might be closed, port is: " << ntohs(sock_info->socket_addr.sin_port) << endl;
+            if (srv_observer != nullptr)
+                srv_observer->clnt_disconnect(sock_info->ip, ntohs(sock_info->socket_addr.sin_port));
+
+            closesocket(sock_info->socket);
+            
+            auto it = std::find(this->clnt_sockets.begin(), this->clnt_sockets.end(), sock_info);
+            if (it != this->clnt_sockets.end())
+                this->clnt_sockets.erase(it);
             break;
         }else{
             cout << "recv() error: " << str_len << endl;
-            break;
         }
     }
-    cout << "thread read msg is finishing, thread id is: " << std::this_thread::get_id() << endl;
 }
 
 void TcpServer::send_msg(const std::string &ip, const std::string &msg)
 {
-
+    for (auto it: clnt_sockets)
+    {
+        if (it->ip == ip){
+            send(it->socket, msg.c_str(), msg.size(), 0);
+            break;
+        }
+    }
 }
 
 void TcpServer::close_socket()
 {
-
+    for (auto clnt: clnt_sockets)
+    {
+        closesocket(clnt->socket);
+    }
+    clnt_sockets.clear();
 }
 
 void TcpServer::err_handling(const std::string &err_msg)

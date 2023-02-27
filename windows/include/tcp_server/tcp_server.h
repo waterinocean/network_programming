@@ -9,14 +9,17 @@
 
 struct SocketInfo
 {
-    SocketInfo(SOCKET socket, SOCKADDR_IN socket_addr, int sock_addr_size):
-    socket(socket),socket_addr(socket_addr),sock_addr_size(sock_addr_size) {}
+    SocketInfo(SOCKET socket, SOCKADDR_IN socket_addr):
+    socket(socket),socket_addr(socket_addr) {
+        ip = inet_ntoa(socket_addr.sin_addr);
+    }
     
     SOCKET socket;
     SOCKADDR_IN socket_addr;
-    int sock_addr_size;
+    std::string ip;    
 };
 
+class AbstractServerObserver;
 class TcpServer
 {
 public:
@@ -24,6 +27,8 @@ public:
     ~TcpServer();
 
 public:
+    //set observer
+    void set_observer(std::shared_ptr<AbstractServerObserver> observer);
     //start listen
     void start();
 
@@ -41,12 +46,13 @@ private:
 
 private:
     WSADATA wsa_data;
-
     SOCKET srv_socket;
     SOCKADDR_IN srv_addr;
     int srv_port;
 
     std::vector<std::shared_ptr<SocketInfo>> clnt_sockets = {};
+
+    std::shared_ptr<AbstractServerObserver> srv_observer = nullptr;
 };
 
 #endif
