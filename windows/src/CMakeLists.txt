@@ -1,4 +1,6 @@
 add_subdirectory(file)
 add_subdirectory(tcp_server)
 add_subdirectory(file_server_tcp)
+add_subdirectory(tcp_client)
+add_subdirectory(file_client_tcp)
 add_subdirectory(practise)

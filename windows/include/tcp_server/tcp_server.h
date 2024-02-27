@@ -9,8 +9,10 @@
 
 struct SocketInfo
 {
-    SocketInfo(SOCKET socket, SOCKADDR_IN socket_addr):
-    socket(socket),socket_addr(socket_addr) {
+    SocketInfo(SOCKET socket, SOCKADDR_IN socket_addr)
+        : socket(socket)
+        , socket_addr(socket_addr) 
+    {
         ip = inet_ntoa(socket_addr.sin_addr);
     }
     

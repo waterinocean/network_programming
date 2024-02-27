@@ -104,7 +104,10 @@ void TcpServer::read_msg(std::shared_ptr<SocketInfo> sock_info)
         str_len = recv(sock_info->socket, msg_recv, 1000, 0);
         if (str_len > 0){
             if (srv_observer != nullptr)
+            {
                 srv_observer->receive_msg(sock_info->ip, msg_recv);
+            }
+            send(sock_info->socket, msg_recv, str_len, 0);
         }
         else if (str_len == 0){
             if (srv_observer != nullptr)
@@ -117,8 +120,9 @@ void TcpServer::read_msg(std::shared_ptr<SocketInfo> sock_info)
                 this->clnt_sockets.erase(it);
             break;
         }else{
-            cout << "recv() error: " << str_len << endl;
+            //cout << "recv() error: " << str_len << endl;
         }
+        this_thread::sleep_for(chrono::milliseconds(50));
     }
 }
 
