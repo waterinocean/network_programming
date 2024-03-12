@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/os_copy.dir/os_copy.cpp.o -o ../bin/os_copy 

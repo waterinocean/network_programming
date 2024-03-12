@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/hello_client.dir/hello_client.cpp.o -o ../bin/hello_client 

@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/cplus_copy.dir/cplus_copy.cpp.o -o ../bin/cplus_copy 
