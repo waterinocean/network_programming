@@ -7,12 +7,14 @@
 #include <unistd.h>
 #include <thread>
 #include <sys/types.h>
+#include "protocol.h"
 
 using namespace std;
 
 void errorHandling(string msg);
 void sendFile(int socket, string file);
 void process(int socket);
+
 int main(void)
 {
     int serverSocket = socket(PF_INET, SOCK_STREAM, 0);
@@ -70,28 +72,48 @@ void errorHandling(string msg)
 
 void sendFile(int socket, string file)
 {
-    std::ifstream f(file, std::ios_base::in | std::ios_base::binary);
-    if (!f.is_open())
+    char msg[4096];
+    int msgLen = 0;
+    ackFile(msg, msgLen, file.c_str());
+    if (msgLen > 0)
     {
-        cout << "open file error";
-        return;
+        printf("pack file ack, msgLen:%d\n", msgLen);
+        write(socket, msg, msgLen);
     }
-    f.seekg(0, f.end);
-    int length = f.tellg();
-    f.seekg(0, f.beg);
-    char msg[length];
-    
-    f.read(msg, length);
-    f.close();
-    
-    write(socket, msg, length);
 }
 
 void process(int socket)
 {
     cout << "thread started: " << gettid() << endl;
-    string file = "./server_data/send.cpp";
-    sendFile(socket, file);
+
+    char msg[100];
+    LData data;
+    std::string file = "./data/send.cpp";
+    while (1)
+    {
+        memset(msg, 0, sizeof(msg));
+        int len = read(socket, msg, 100);
+        if (len <= 0)
+        {
+            continue;
+        }
+
+        if (!unpack(msg, len, data))
+        {
+            printf("unpack error.\n");
+            continue;
+        }
+        switch (data.header.command)
+        {
+        case LCOMMAND_REQ(LCOMMAND_File):
+            cout << "receive file req, send file." << endl;
+            sendFile(socket, file);
+            break;
+        default:
+            break;
+        }
+        break;
+    }
     close(socket);
     cout << "thread quited." << endl;
 }
