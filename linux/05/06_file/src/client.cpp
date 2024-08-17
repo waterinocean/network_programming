@@ -8,8 +8,14 @@
 #include <string>
 #include "lfileclient.h"
 #include "ltcpclient.h"
+#include <condition_variable>
+#include <mutex>
+#include <vector>
 
 using namespace std;
+
+mutex g_mutexReq;
+condition_variable g_conditionReq;
 
 int main(void)
 {
@@ -20,10 +26,13 @@ int main(void)
     client->setClient(tcp);
     client->startConnect();
 
+    std::vector<std::string> vecFile{"test1", "test2"};
     while (1)
     {
-        client->reqFile(std::string("test1"));
-        usleep(6 * 1000 * 1000);
+        std::unique_lock<std::mutex> lock(g_mutexReq);
+        client->reqFile(vecFile.front());
+        vecFile.erase(vecFile.begin());
+        g_conditionReq.wait(lock);
     }
     
     // while (1)

@@ -4,6 +4,10 @@
 #include "lmsgparser.h"
 #include <fstream>
 #include "ldebug.h"
+#include <condition_variable>
+
+extern std::mutex g_mutexReq;
+extern std::condition_variable g_conditionReq;
 
 LFileClient::LFileClient(void)
     : m_client(nullptr)
@@ -46,9 +50,13 @@ void LFileClient::handleMessage(char *buf, int len)
     switch (cmd & 0xFFFF)
     {
     case LCOMMAND_File:
+    {
         DBGprint("ack file\n");
         handleFileAck(cmd, data, dataLen);
+        std::lock_guard<std::mutex> lock(g_mutexReq);
+        g_conditionReq.notify_one();
         break;
+    }
     default:
         break;
     }
