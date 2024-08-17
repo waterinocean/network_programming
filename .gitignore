@@ -37,3 +37,6 @@ build/
 
 # vscode
 .vscode/*
+
+# test data
+data/*
